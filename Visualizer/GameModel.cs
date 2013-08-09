@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CedecAI
+namespace Visualizer
 {
-    public class Class1
+    class GameModel
     {
     }
 }
