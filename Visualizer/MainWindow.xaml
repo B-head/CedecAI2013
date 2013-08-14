@@ -1,8 +1,24 @@
 ﻿<Window x:Class="Visualizer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow" Height="350" Width="525">
+        Title="MainWindow" Height="600" Width="1000">
     <Grid>
-        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="150"/>
+        </Grid.ColumnDefinitions>
+        <Canvas x:Name="FieldInfo" Margin="0" ClipToBounds="True"/>
+        <StackPanel Grid.Column="1" Margin="10">
+            <Button x:Name="NextButton" Content="Next" Click="NextTurnHandler"/>
+            <CheckBox x:Name="AutoNext" Content="Auto" HorizontalAlignment="Center" Checked="NextTurnHandler"/>
+            <TextBlock x:Name="Player1Info" Text="Player1" Foreground="Red"/>
+            <TextBlock x:Name="Player2Info" Text="Player2" Foreground="Blue"/>
+            <TextBlock x:Name="Player3Info" Text="Player3" Foreground="Green"/>
+            <Label Content="Show infomartion"/>
+            <CheckBox x:Name="ShowRobot" Content="Robot" IsChecked="True" Click="ShowChangeHandler"/>
+            <CheckBox x:Name="ShowResource" Content="Resource" Click="ShowChangeHandler"/>
+            <CheckBox x:Name="ShowTowerDamage" Content="Tower damage" Click="ShowChangeHandler"/>
+        </StackPanel>
+        <GridSplitter Width="1" IsEnabled="False" Background="Black" Margin="0"/>
     </Grid>
 </Window>

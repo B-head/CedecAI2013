@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
-namespace CedecAI
+namespace Common
 {
-    struct GameMass
+    public struct GameMass
     {
         public int Player;
         public Terrain Ter;
@@ -14,7 +15,7 @@ namespace CedecAI
         public int WaitRobot;
     }
 
-    enum Terrain
+    public enum Terrain
     {
         Outside,
         Wasteland,
@@ -26,5 +27,28 @@ namespace CedecAI
         Bridge,
         House,
         Town,
+    }
+
+    public enum Direction
+    {
+        Right,
+        UpperRight,
+        DownerRight,
+        Left,
+        UpperLeft,
+        DownerLeft,
+    }
+
+    public interface GameAI
+    {
+        string Prepare(int player, GameField field);
+        void Think(int turn, int maxTurn, int player, GameField field, Commander com);
+    }
+
+    public interface Commander
+    {
+        void Move(int x, int y, Direction dir, int robot);
+        void Build(int x, int y, Terrain building);
+        void Finish();
     }
 }

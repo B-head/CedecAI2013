@@ -5,140 +5,53 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 
-namespace CedecAI
+namespace Common
 {
-    class GameField : Field<GameMass>
+    public class GameField : Field<GameMass>
     {
         public readonly int Size;
 
         public GameField(int size)
-            : base(size * 2 + 1, size * 2 + 1)
+            : base(size * 2 - 1, size * 2 - 1)
         {
             Size = size;
             Initialize();
         }
 
-        private void Initialize()
+        protected void Initialize()
         {
             for (int x = 0; x < Width; x++)
             {
                 for (int y = 0; y < Height; y++)
                 {
                     field[x, y].Player = -1;
-                    if (y < 1 || y >= Height - 1) continue;
-                    if (y <= Size)
+                    if (y < 0 || y >= Height) continue;
+                    if (y < Size)
                     {
-                        if (x < Size - y + 1 || x >= Width - 1) continue;
+                        if (x < Size - 1 - y || x >= Width) continue;
                     }
                     else
                     {
-                        if (x < 1 || x >= Width - 1 + Size - y) continue;
+                        if (x < 0 || x >= Width + Size - 1 - y) continue;
                     }
                     field[x, y].Ter = Terrain.Wasteland;
                 }
             }
         }
 
-        public static GameField ParseText(TextReader read, out int turn, out int maxTurn, out int playerTurn)
+        public bool Move(int player, int fromX, int fromY, Direction dir, int robot)
         {
-            string[] line;
-            line = read.ReadLine().Split(' ');
-            turn = int.Parse(line[0]);
-            maxTurn = int.Parse(line[1]);
-            playerTurn = int.Parse(line[2]);
-            line = read.ReadLine().Split(' ');
-            GameField result = new GameField(int.Parse(line[0]));
-            int count = int.Parse(line[1]);
-            for (int i = 0; i < count; i++)
-            {
-                line = read.ReadLine().Split(' ');
-                int x = int.Parse(line[0]), y = int.Parse(line[1]), player = int.Parse(line[2]), robot = int.Parse(line[3]);
-                Terrain ter = ParseTopography(line[5], line[6]);
-                result.field[x, y] = new GameMass { Player = player, Ter = ter, WaitRobot = robot };
-            }
-            return result;
-        }
-
-        private static Terrain ParseTopography(string ter, string building)
-        {
-            switch (ter)
-            {
-                case "wasteland":
-                case "settlement":
-                    return Terrain.Wasteland;
-                case "base":
-                    switch (building)
-                    {
-                        case "initial": return Terrain.Initial;
-                        case "robotmaker": return Terrain.RobotMaker;
-                        case "tower": return Terrain.AttackTower;
-                        case "excavator": return Terrain.Excavator;
-                        case "bridge": return Terrain.Bridge;
-                        case "house": return Terrain.House;
-                        case "town": return Terrain.Town;
-                        default: throw new Exception();
-                    }
-                case "hole":
-                    return Terrain.Hole;
-                default: 
-                    throw new Exception();
-            }
-        }
-
-        public void SetActive(int player)
-        {
-            for (int x = 0; x < Width; x++)
-            {
-                for (int y = 0; y < Height; y++)
-                {
-                    if (field[x, y].Player != player) continue;
-                    field[x, y].ActiveRobot += field[x, y].WaitRobot;
-                    field[x, y].WaitRobot = 0;
-                }
-            }
-        }
-
-        public void SetWait(int player)
-        {
-            for (int x = 0; x < Width; x++)
-            {
-                for (int y = 0; y < Height; y++)
-                {
-                    if (field[x, y].Player != player) continue;
-                    field[x, y].WaitRobot += field[x, y].ActiveRobot;
-                    field[x, y].ActiveRobot = 0;
-                }
-            }
-        }
-
-        public void TowerAttacking(int player)
-        {
-            for (int x = 0; x < Width; x++)
-            {
-                for (int y = 0; y < Height; y++)
-                {
-                    if (field[x, y].Player == player) continue;
-                    if (field[x, y].WaitRobot <= 0) continue;
-                    field[x, y].WaitRobot -= GetTowerDamage(x, y);
-                }
-            }
-        }
-
-        public bool Move(int player, int fromX, int fromY, int toX, int toY, int robot)
-        {
+            if (!IsMove(player, fromX, fromY, dir, robot)) return false;
+            int toX, toY;
+            TransformDirection(dir, fromX, fromY, out toX, out toY);
             GameMass from = field[fromX, fromY], to = field[toX, toY];
-            if (from.Player != player) return false;
-            if (from.ActiveRobot < robot) return false;
-            if (from.Ter == Terrain.Hole) return false;
             if (to.Player == player)
             {
-                if (to.Ter == Terrain.Outside) return false;
                 from.ActiveRobot -= robot;
                 to.WaitRobot += robot;
             }
             else
             {
-                if (to.Ter != Terrain.Wasteland && to.Ter != Terrain.Hole) return false;
                 from.ActiveRobot -= robot;
                 if (to.WaitRobot < robot)
                 {
@@ -155,23 +68,87 @@ namespace CedecAI
             return true;
         }
 
-        public bool Build(int player, int x, int y, Terrain ter, ref int extraPoint)
+        public bool IsMove(int player, int fromX, int fromY, Direction dir, int robot)
         {
-            if (field[x, y].Player != player) return false;
-            if (field[x, y].Ter == Terrain.Wasteland && ter == Terrain.Bridge) return false;
-            if (field[x, y].Ter == Terrain.Hole && ter != Terrain.Bridge) return false;
-            int resource, robot;
-            GetRequirement(ter, out resource, out robot);
-            if (field[x, y].ActiveRobot < robot) return false;
-            int pr = GetPrepareResource(x, y);
-            if (pr < resource) return false;
-            if (ter == Terrain.Town)
+            if (robot <= 0) return false;
+            int toX, toY;
+            TransformDirection(dir, fromX, fromY, out toX, out toY);
+            if (IsInRange(toX, toY)) return false;
+            GameMass from = field[fromX, fromY], to = field[toX, toY];
+            if (from.Player != player) return false;
+            if (from.ActiveRobot < robot) return false;
+            if (from.Ter == Terrain.Hole) return false;
+            if (to.Player == player)
             {
-                extraPoint += pr - resource;
+                if (to.Ter == Terrain.Outside) return false;
+            }
+            else
+            {
+                if (to.Ter != Terrain.Wasteland && to.Ter != Terrain.Hole) return false;
+            }
+            return true;
+        }
+
+        public bool Build(int player, int x, int y, Terrain building, ref int extraPoint)
+        {
+            if (!IsBuild(player, x, y, building)) return false;
+            int resource, robot;
+            GetRequirement(building, out resource, out robot);
+            if (building == Terrain.Town)
+            {
+                extraPoint += GetPrepareResource(x, y) - resource;
             }
             field[x, y].ActiveRobot -= robot;
-            field[x, y].Ter = ter;
+            field[x, y].Ter = building;
             return true;
+        }
+
+        public bool IsBuild(int player, int x, int y, Terrain building)
+        {
+            if (field[x, y].Player != player) return false;
+            if (field[x, y].Ter != Terrain.Wasteland && field[x, y].Ter != Terrain.Hole) return false;
+            if (field[x, y].Ter == Terrain.Wasteland && building == Terrain.Bridge) return false;
+            if (field[x, y].Ter == Terrain.Hole && building != Terrain.Bridge) return false;
+            int resource, robot;
+            GetRequirement(building, out resource, out robot);
+            if (field[x, y].ActiveRobot < robot) return false;
+            if (GetPrepareResource(x, y) < resource) return false;
+            return true;
+        }
+
+        public void StartTurn(int player)
+        {
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    if (field[x, y].Player == player)
+                    {
+                        field[x, y].WaitRobot += GetAddRobot(x, y);
+                        field[x, y].ActiveRobot += field[x, y].WaitRobot;
+                        field[x, y].WaitRobot = 0;
+                    }
+                    else
+                    {
+                        if (field[x, y].WaitRobot <= 0) continue;
+                        field[x, y].WaitRobot -= GetTowerDamage(player, x, y);
+                        if (field[x, y].WaitRobot < 0) field[x, y].WaitRobot = 0;
+                    }
+                }
+            }
+        }
+
+        public void EndTurn(int player)
+        {
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    if (field[x, y].Player != player) continue;
+                    field[x, y].WaitRobot += field[x, y].ActiveRobot;
+                    field[x, y].ActiveRobot = 0;
+                }
+            }
         }
 
         public void GetRequirement(Terrain ter, out int resource, out int robot)
@@ -188,12 +165,74 @@ namespace CedecAI
             }
         }
 
+        public int GetTotalVictoryPoint(int player)
+        {
+            int result = 0;
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    if (field[x, y].Player != player) continue;
+                    result += GetVictoryPoint(x, y);
+                }
+            }
+            return result;
+        }
+
+        public int GetVictoryPoint(int x, int y)
+        {
+            if (field[x, y].Ter == Terrain.Wasteland)
+            {
+                return 1;
+            }
+            else if (field[x, y].Ter == Terrain.Hole || field[x, y].Ter == Terrain.Outside)
+            {
+                return 0;
+            }
+            else
+            {
+                return 3;
+            }
+        }
+
+        public int GetAddRobot(int x, int y)
+        {
+            if (field[x, y].Ter == Terrain.Initial)
+            {
+                return 5;
+            }
+            else if (field[x, y].Ter == Terrain.RobotMaker)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        public int GetTowerDamage(int player, int x, int y)
+        {
+            if (field[x, y].Player == player) return 0;
+            int result = 0, tx, ty;
+            for (int i = 1; i < 13; i++)
+            {
+                TransformTowerRange(i, x, y, out tx, out ty);
+                if (IsInRange(tx, ty)) continue;
+                if (field[tx, ty].Ter != Terrain.AttackTower) continue;
+                if (field[tx, ty].Player != player) continue;
+                result += 2;
+            }
+            return result;
+        }
+
         public int GetPrepareResource(int x, int y)
         {
             int result = 0, player = field[x, y].Player, tx, ty;
             for (int i = 0; i < 7; i++)
             {
                 TransformAdjoin(i, x, y, out tx, out ty);
+                if (IsInRange(tx, ty)) continue;
                 if (field[tx, ty].Player != player) continue;
                 result += GetYieldResource(tx, ty);
             }
@@ -207,6 +246,7 @@ namespace CedecAI
             for (int i = 1; i < 7; i++)
             {
                 TransformAdjoin(i, x, y, out tx, out ty);
+                if (IsInRange(tx, ty)) continue;
                 if (field[tx, ty].Player != player) continue;
                 if (field[tx, ty].Ter != Terrain.Excavator) continue;
                 result++;
@@ -214,17 +254,20 @@ namespace CedecAI
             return result;
         }
 
-        public int GetTowerDamage(int x, int y)
+        public void TransformDirection(Direction dir, int x, int y, out int tx, out int ty)
         {
-            int result = 0, player = field[x, y].Player, tx, ty;
-            for (int i = 1; i < 13; i++)
+            tx = x;
+            ty = y;
+            switch (dir)
             {
-                TransformTowerRange(i, x, y, out tx, out ty);
-                if (field[tx, ty].Ter != Terrain.AttackTower) continue;
-                if (field[tx, ty].Player == player) continue;
-                result += 2;
+                case Direction.Right: tx += 1; ty += 0; break;
+                case Direction.UpperRight: tx += 1; ty += -1; break;
+                case Direction.DownerRight: tx += 0; ty += 1; break;
+                case Direction.Left: tx += -1; ty += 0; break;
+                case Direction.DownerLeft: tx += -1; ty += 1; break;
+                case Direction.UpperLeft: tx += 0; ty += -1; break;
+                default: throw new Exception();
             }
-            return result;
         }
 
         public void TransformAdjoin(int i, int x, int y, out int tx, out int ty)
@@ -235,10 +278,10 @@ namespace CedecAI
             {
                 case 0: tx += 0; ty += 0; break;
                 case 1: tx += 1; ty += 0; break;
-                case 2: tx += 1; ty += 1; break;
+                case 2: tx += 1; ty += -1; break;
                 case 3: tx += 0; ty += 1; break;
                 case 4: tx += -1; ty += 0; break;
-                case 5: tx += -1; ty += -1; break;
+                case 5: tx += -1; ty += 1; break;
                 case 6: tx += 0; ty += -1; break;
                 default: throw new Exception();
             }
@@ -265,18 +308,6 @@ namespace CedecAI
                 case 12: tx += 0; ty += -2; break;
                 default: throw new Exception();
             }
-        }
-
-        public void ToRedress(ref int x, ref int y)
-        {
-            x -= Size;
-            y -= Size;
-        }
-
-        public void FromRedress(ref int x, ref int y)
-        {
-            x += Size;
-            y += Size;
         }
     }
 }

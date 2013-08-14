@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CedecAI
+namespace Common
 {
-    class Field<TYPE>
+    public class Field<TYPE>
     {
         protected TYPE[,] field;
         public readonly int Width;
@@ -25,6 +25,16 @@ namespace CedecAI
             {
                 return field[x, y];
             }
+        }
+
+        public bool IsInRange(int x, int y)
+        {
+            return x < 0 || x >= Width || y < 0 || y >= Height;
+        }
+
+        public void CopyTo(Field<TYPE> other)
+        {
+            Array.Copy(field, other.field, Width * Height);
         }
     }
 }
