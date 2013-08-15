@@ -65,26 +65,36 @@ namespace Visualizer
         class ManagerCommander : Commander
         {
             GameManager parent;
-            public bool IsMove;
-            public bool IsBuild;
-            public bool IsFinish;
+            public bool IsMove { get; private set; }
+            public bool IsBuild { get; private set; }
+            public bool IsFinish { get; private set; }
 
             public ManagerCommander(GameManager parent)
             {
                 this.parent = parent;
             }
 
+            public int Player
+            {
+                get
+                {
+                    return parent.Player;
+                }
+            }
+
             public void Move(int x, int y, Direction dir, int robot)
             {
                 if (IsFinish || IsBuild) throw new Exception();
-                if (!parent.Field.Move(parent.Player, x, y, dir, robot)) throw new Exception();
+                if (parent.Field[x, y].Player != Player) throw new Exception();
+                if (!parent.Field.Move(x, y, dir, robot)) throw new Exception();
                 IsMove = true;
             }
 
             public void Build(int x, int y, Terrain building)
             {
                 if (IsFinish || IsBuild || IsMove) throw new Exception();
-                if (!parent.Field.Build(parent.Player, x, y, building, ref parent.ExtraPoint[parent.Player])) throw new Exception();
+                if (parent.Field[x, y].Player != Player) throw new Exception();
+                if (!parent.Field.Build(x, y, building, ref parent.ExtraPoint[parent.Player])) throw new Exception();
                 IsBuild = true;
             }
 

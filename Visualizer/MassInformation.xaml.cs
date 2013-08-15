@@ -57,6 +57,18 @@ namespace Visualizer
             return result;
         }
 
+        public void UpdateSelected(bool select)
+        {
+            if (select)
+            {
+                BorderBrush = Brushes.White;
+            }
+            else
+            {
+                BorderBrush = Brushes.Black;
+            }
+        }
+
         public void UpdateTerrain(int player, Terrain ter)
         {
             switch (player)

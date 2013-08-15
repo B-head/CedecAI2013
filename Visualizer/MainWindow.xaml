@@ -18,6 +18,8 @@
             <CheckBox x:Name="ShowRobot" Content="Robot" IsChecked="True" Click="ShowChangeHandler"/>
             <CheckBox x:Name="ShowResource" Content="Resource" Click="ShowChangeHandler"/>
             <CheckBox x:Name="ShowTowerDamage" Content="Tower damage" Click="ShowChangeHandler"/>
+            <CheckBox x:Name="ShowDistanse" Content="Distance" Click="ShowChangeHandler"/>
+            <CheckBox x:Name="ShowEvaluate" Content="Evaluate" Click="ShowChangeHandler"/>
         </StackPanel>
         <GridSplitter Width="1" IsEnabled="False" Background="Black" Margin="0"/>
     </Grid>

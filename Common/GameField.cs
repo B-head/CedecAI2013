@@ -39,12 +39,13 @@ namespace Common
             }
         }
 
-        public bool Move(int player, int fromX, int fromY, Direction dir, int robot)
+        public bool Move(int fromX, int fromY, Direction dir, int robot)
         {
-            if (!IsMove(player, fromX, fromY, dir, robot)) return false;
+            if (!IsMove(fromX, fromY, dir, robot)) return false;
             int toX, toY;
             TransformDirection(dir, fromX, fromY, out toX, out toY);
             GameMass from = field[fromX, fromY], to = field[toX, toY];
+            int player = from.Player;
             if (to.Player == player)
             {
                 from.ActiveRobot -= robot;
@@ -68,14 +69,13 @@ namespace Common
             return true;
         }
 
-        public bool IsMove(int player, int fromX, int fromY, Direction dir, int robot)
+        public bool IsMove(int fromX, int fromY, Direction dir, int robot)
         {
             if (robot <= 0) return false;
             int toX, toY;
-            TransformDirection(dir, fromX, fromY, out toX, out toY);
-            if (IsInRange(toX, toY)) return false;
+            if (TransformDirection(dir, fromX, fromY, out toX, out toY)) return false;
             GameMass from = field[fromX, fromY], to = field[toX, toY];
-            if (from.Player != player) return false;
+            int player = from.Player;
             if (from.ActiveRobot < robot) return false;
             if (from.Ter == Terrain.Hole) return false;
             if (to.Player == player)
@@ -89,23 +89,30 @@ namespace Common
             return true;
         }
 
-        public bool Build(int player, int x, int y, Terrain building, ref int extraPoint)
+        public bool Build(int x, int y, Terrain building, ref int extraPoint)
         {
-            if (!IsBuild(player, x, y, building)) return false;
+            if (!IsBuild(x, y, building)) return false;
             int resource, robot;
             GetRequirement(building, out resource, out robot);
             if (building == Terrain.Town)
             {
                 extraPoint += GetPrepareResource(x, y) - resource;
+                int tx, ty, player = field[x,y].Player;
+                for (int i = 1; i < 7; i++)
+                {
+                    if (TransformDirection(i, x, y, out tx, out ty)) continue;
+                    if (field[tx, ty].Player != player) continue;
+                    if (field[tx, ty].Ter != Terrain.Wasteland) continue;
+                    field[tx, ty].Ter = Terrain.House;
+                }
             }
             field[x, y].ActiveRobot -= robot;
             field[x, y].Ter = building;
             return true;
         }
 
-        public bool IsBuild(int player, int x, int y, Terrain building)
+        public bool IsBuild(int x, int y, Terrain building)
         {
-            if (field[x, y].Player != player) return false;
             if (field[x, y].Ter != Terrain.Wasteland && field[x, y].Ter != Terrain.Hole) return false;
             if (field[x, y].Ter == Terrain.Wasteland && building == Terrain.Bridge) return false;
             if (field[x, y].Ter == Terrain.Hole && building != Terrain.Bridge) return false;
@@ -215,10 +222,9 @@ namespace Common
         {
             if (field[x, y].Player == player) return 0;
             int result = 0, tx, ty;
-            for (int i = 1; i < 13; i++)
+            for (int i = 0; i < 12; i++)
             {
-                TransformTowerRange(i, x, y, out tx, out ty);
-                if (IsInRange(tx, ty)) continue;
+                if (TransformTowerRange(i, x, y, out tx, out ty)) continue;
                 if (field[tx, ty].Ter != Terrain.AttackTower) continue;
                 if (field[tx, ty].Player != player) continue;
                 result += 2;
@@ -231,8 +237,7 @@ namespace Common
             int result = 0, player = field[x, y].Player, tx, ty;
             for (int i = 0; i < 7; i++)
             {
-                TransformAdjoin(i, x, y, out tx, out ty);
-                if (IsInRange(tx, ty)) continue;
+                if (TransformDirection(i, x, y, out tx, out ty)) continue;
                 if (field[tx, ty].Player != player) continue;
                 result += GetYieldResource(tx, ty);
             }
@@ -245,8 +250,7 @@ namespace Common
             int result = 1, player = field[x, y].Player, tx, ty;
             for (int i = 1; i < 7; i++)
             {
-                TransformAdjoin(i, x, y, out tx, out ty);
-                if (IsInRange(tx, ty)) continue;
+                if (TransformDirection(i, x, y, out tx, out ty)) continue;
                 if (field[tx, ty].Player != player) continue;
                 if (field[tx, ty].Ter != Terrain.Excavator) continue;
                 result++;
@@ -254,60 +258,27 @@ namespace Common
             return result;
         }
 
-        public void TransformDirection(Direction dir, int x, int y, out int tx, out int ty)
-        {
-            tx = x;
-            ty = y;
-            switch (dir)
-            {
-                case Direction.Right: tx += 1; ty += 0; break;
-                case Direction.UpperRight: tx += 1; ty += -1; break;
-                case Direction.DownerRight: tx += 0; ty += 1; break;
-                case Direction.Left: tx += -1; ty += 0; break;
-                case Direction.DownerLeft: tx += -1; ty += 1; break;
-                case Direction.UpperLeft: tx += 0; ty += -1; break;
-                default: throw new Exception();
-            }
-        }
-
-        public void TransformAdjoin(int i, int x, int y, out int tx, out int ty)
+        public bool TransformTowerRange(int i, int x, int y, out int tx, out int ty)
         {
             tx = x;
             ty = y;
             switch (i)
             {
-                case 0: tx += 0; ty += 0; break;
-                case 1: tx += 1; ty += 0; break;
-                case 2: tx += 1; ty += -1; break;
-                case 3: tx += 0; ty += 1; break;
-                case 4: tx += -1; ty += 0; break;
-                case 5: tx += -1; ty += 1; break;
-                case 6: tx += 0; ty += -1; break;
+                case 0: tx += 1; ty += 0; break;
+                case 1: tx += 1; ty += -1; break;
+                case 2: tx += 0; ty += 1; break;
+                case 3: tx += -1; ty += 0; break;
+                case 4: tx += -1; ty += 1; break;
+                case 5: tx += 0; ty += -1; break;
+                case 6: tx += 2; ty += 0; break;
+                case 7: tx += 2; ty += -2; break;
+                case 8: tx += 0; ty += 2; break;
+                case 9: tx += -2; ty += 0; break;
+                case 10: tx += -2; ty += 2; break;
+                case 11: tx += 0; ty += -2; break;
                 default: throw new Exception();
             }
-        }
-
-        public void TransformTowerRange(int i, int x, int y, out int tx, out int ty)
-        {
-            tx = x;
-            ty = y;
-            switch (i)
-            {
-                case 0: tx += 0; ty += 0; break;
-                case 1: tx += 1; ty += 0; break;
-                case 2: tx += 1; ty += -1; break;
-                case 3: tx += 0; ty += 1; break;
-                case 4: tx += -1; ty += 0; break;
-                case 5: tx += -1; ty += 1; break;
-                case 6: tx += 0; ty += -1; break;
-                case 7: tx += 2; ty += 0; break;
-                case 8: tx += 2; ty += -2; break;
-                case 9: tx += 0; ty += 2; break;
-                case 10: tx += -2; ty += 0; break;
-                case 11: tx += -2; ty += 2; break;
-                case 12: tx += 0; ty += -2; break;
-                default: throw new Exception();
-            }
+            return !IsInRange(tx, ty);
         }
     }
 }

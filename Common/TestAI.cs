@@ -20,16 +20,16 @@ namespace Common
             return "B_head:TestAI";
         }
 
-        public void Think(int turn, int maxTurn, int player, GameField field, Commander com)
+        public void Think(int turn, int maxTurn, int player, GameField field, Commander commander)
         {
-            if (!Build(player, field, com))
+            if (!Build(player, field, commander))
             {
-                Move(player, field, com);
+                Move(player, field, commander);
             }
-            com.Finish();
+            commander.Finish();
         }
 
-        private void Move(int player, GameField field, Commander com)
+        private void Move(int player, GameField field, Commander commander)
         {
             int w = field.Width, h = field.Height;
             for (int x = 0; x < w; x++)
@@ -38,15 +38,15 @@ namespace Common
                 {
                     Direction dir = ToDirection(random.Next(6));
                     int robot = random.Next(field[x, y].ActiveRobot) + 1;
-                    if (field.IsMove(player, x, y, dir, robot))
+                    if (field.IsMove(x, y, dir, robot))
                     {
-                        com.Move(x, y, dir, robot);
+                        commander.Move(x, y, dir, robot);
                     }
                 }
             }
         }
 
-        private bool Build(int player, GameField field, Commander com)
+        private bool Build(int player, GameField field, Commander commander)
         {
             Terrain building = ToBuilding(random.Next(6));
             int w = field.Width, h = field.Height;
@@ -54,9 +54,9 @@ namespace Common
             {
                 for (int y = 0; y < h; y++)
                 {
-                    if (field.IsBuild(player, x, y, building))
+                    if (field.IsBuild(x, y, building))
                     {
-                        com.Build(x, y, building);
+                        commander.Build(x, y, building);
                         return true;
                     }
                 }

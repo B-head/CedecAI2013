@@ -15,6 +15,12 @@ namespace Common
         public int WaitRobot;
     }
 
+    public struct IntPoint
+    {
+        public int X;
+        public int Y;
+    }
+
     public enum Terrain
     {
         Outside,
@@ -31,22 +37,27 @@ namespace Common
 
     public enum Direction
     {
+        Center,
         Right,
-        UpperRight,
         DownerRight,
+        DownerLeft,
         Left,
         UpperLeft,
-        DownerLeft,
+        UpperRight,
     }
 
     public interface GameAI
     {
         string Prepare(int player, GameField field);
-        void Think(int turn, int maxTurn, int player, GameField field, Commander com);
+        void Think(int turn, int maxTurn, int player, GameField field, Commander commander);
     }
 
     public interface Commander
     {
+        bool IsMove { get; }
+        bool IsBuild { get; }
+        bool IsFinish { get; }
+        int Player { get; }
         void Move(int x, int y, Direction dir, int robot);
         void Build(int x, int y, Terrain building);
         void Finish();

@@ -85,14 +85,14 @@ namespace Visualizer
 
         private int JoiningCount(bool[,] settled, int x, int y)
         {
-            if (IsInRange(x, y)) return 0;
+            if (!IsInRange(x, y)) return 0;
             if (settled[x, y]) return 0;
             if (field[x, y].Ter == Terrain.Outside || field[x, y].Ter == Terrain.Hole) return 0;
             int result = 1, tx, ty;
             settled[x, y] = true;
             for (int i = 1; i < 7; i++)
             {
-                TransformAdjoin(i, x, y, out tx, out ty);
+                TransformDirection(i, x, y, out tx, out ty);
                 result += JoiningCount(settled, tx, ty);
             }
             return result;

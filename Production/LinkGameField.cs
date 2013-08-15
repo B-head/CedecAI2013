@@ -10,22 +10,26 @@ namespace Production
 {
     class LinkGameField : GameField
     {
-        public LinkGameField(int size)
+        public readonly int Turn;
+        public readonly int MaxTurn;
+        public readonly int Player;
+
+        public LinkGameField(int size, int turn, int maxTurn, int player)
             : base(size)
         {
-
+            Turn = turn;
+            MaxTurn = maxTurn;
+            Player = player;
         }
 
-        public static LinkGameField ParseText(out int turn, out int maxTurn, out int playerTurn)
+        public static LinkGameField ParseText()
         {
             string[] line;
             if (Console.ReadLine() != "START") throw new Exception();
             line = Console.ReadLine().Split(' ');
-            turn = int.Parse(line[0]);
-            maxTurn = int.Parse(line[1]);
-            playerTurn = int.Parse(line[2]);
+            int turn = int.Parse(line[0]), maxTurn = int.Parse(line[1]), playerTurn = int.Parse(line[2]);
             line = Console.ReadLine().Split(' ');
-            LinkGameField result = new LinkGameField(int.Parse(line[0]));
+            LinkGameField result = new LinkGameField(int.Parse(line[0]), turn, maxTurn, playerTurn);
             int count = int.Parse(line[1]);
             for (int i = 0; i < count; i++)
             {
@@ -92,10 +96,21 @@ namespace Production
         class LinkCommander : Commander
         {
             LinkGameField parent;
+            public bool IsMove { get; private set; }
+            public bool IsBuild { get; private set; }
+            public bool IsFinish { get; private set; }
 
             public LinkCommander(LinkGameField parent)
             {
                 this.parent = parent;
+            }
+
+            public int Player
+            {
+                get
+                {
+                    return parent.Player;
+                }
             }
 
             public void Move(int x, int y, Direction dir, int robot)
@@ -103,6 +118,7 @@ namespace Production
                 string temp = GenerateDirectionCode(dir);
                 parent.ToRedress(ref x, ref y);
                 Console.WriteLine("move {0} {1} {2} {3}", x, y, temp, robot);
+                IsMove = true;
             }
 
             public void Build(int x, int y, Terrain building)
@@ -110,11 +126,13 @@ namespace Production
                 string temp = GenerateBuildingCode(building);
                 parent.ToRedress(ref x, ref y);
                 Console.WriteLine("build {0} {1} {2}", x, y, temp);
+                IsBuild = true;
             }
 
             public void Finish()
             {
                 Console.WriteLine("finish");
+                IsFinish = true;
             }
 
             private string GenerateDirectionCode(Direction dir)

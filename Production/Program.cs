@@ -11,14 +11,13 @@ namespace Production
     {
         static void Main(string[] args)
         {
-            int turn, maxTurn, player;
             GameAI ai = new TestAI();
-            LinkGameField field = LinkGameField.ParseText(out turn, out maxTurn, out player);
-            Console.WriteLine(ai.Prepare(player, field));
-            for (int i = 0; i < maxTurn; i++)
+            LinkGameField field = LinkGameField.ParseText();
+            Console.WriteLine(ai.Prepare(field.Player, field));
+            for (int i = 0; i < field.MaxTurn; i++)
             {
-                field = LinkGameField.ParseText(out turn, out maxTurn, out player);
-                ai.Think(turn, maxTurn, player, field, field.GetCommander());
+                field = LinkGameField.ParseText();
+                ai.Think(field.Turn, field.MaxTurn, field.Player, field, field.GetCommander());
             }
         }
     }
