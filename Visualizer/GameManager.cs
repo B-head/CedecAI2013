@@ -38,7 +38,7 @@ namespace Visualizer
 
         public void NextTurn()
         {
-            if (Turn > MaxTurn) return;
+            if (IsGameOver()) return;
             Field.StartTurn(Player);
             GameField temp = Field.GetGameFieldView();
             ManagerCommander com = new ManagerCommander(this);
@@ -59,6 +59,10 @@ namespace Visualizer
 
         public bool IsGameOver()
         {
+            for (int i = 0; i < 3; i++)
+            {
+                if (Field.GetTotalVictoryPoint(i) + ExtraPoint[i] >= 100) return true;
+            }
             return Turn > MaxTurn;
         }
 

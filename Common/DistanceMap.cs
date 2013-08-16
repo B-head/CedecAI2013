@@ -8,14 +8,25 @@ namespace Common
     public class DistanceMap : Field<byte>
     {
         readonly GameField gameField;
+        readonly Point center;
         public const byte Impossible = byte.MaxValue;
 
         public DistanceMap(GameField gameField, int player, int x, int y)
             : base(gameField.Width, gameField.Height)
         {
             this.gameField = gameField;
+            this.center = new Point { X = x, Y = y };
             Initalize();
             Investigate(0, player, x, y);
+        }
+
+        public DistanceMap(GameField gameField, int player, Point center)
+            : base(gameField.Width, gameField.Height)
+        {
+            this.gameField = gameField;
+            this.center = center;
+            Initalize();
+            Investigate(0, player, center.X, center.Y);
         }
 
         private void Initalize()
@@ -59,6 +70,27 @@ namespace Common
                 }
             }
             return Direction.Center;
+        }
+
+        public IEnumerable<Point> NearIterator()
+        {
+            bool[,] searched = new bool[Width, Height];
+            Queue<Point> queue = new Queue<Point>();
+            queue.Enqueue(center);
+            while (queue.Count > 0)
+            {
+                Point point = queue.Dequeue();
+                foreach(Point temp in Adjoin(point))
+                {
+                    if (searched[temp.X, temp.Y]) continue;
+                    if (this[point] + 1 == this[temp])
+                    {
+                        queue.Enqueue(temp);
+                        searched[temp.X, temp.Y] = true;
+                    }
+                }
+                yield return point;
+            }
         }
     }
 }

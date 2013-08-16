@@ -44,28 +44,25 @@ namespace Common
             if (!IsMove(fromX, fromY, dir, robot)) return false;
             int toX, toY;
             TransformDirection(dir, fromX, fromY, out toX, out toY);
-            GameMass from = field[fromX, fromY], to = field[toX, toY];
-            int player = from.Player;
-            if (to.Player == player)
+            int player = field[fromX, fromY].Player;
+            if (field[toX, toY].Player == player)
             {
-                from.ActiveRobot -= robot;
-                to.WaitRobot += robot;
+                field[fromX, fromY].ActiveRobot -= robot;
+                field[toX, toY].WaitRobot += robot;
             }
             else
             {
-                from.ActiveRobot -= robot;
-                if (to.WaitRobot < robot)
+                field[fromX, fromY].ActiveRobot -= robot;
+                if (field[toX, toY].WaitRobot < robot)
                 {
-                    to.WaitRobot = robot - to.WaitRobot;
-                    to.Player = player;
+                    field[toX, toY].WaitRobot = robot - field[toX, toY].WaitRobot;
+                    field[toX, toY].Player = player;
                 }
                 else
                 {
-                    to.WaitRobot -= robot;
+                    field[toX, toY].WaitRobot -= robot;
                 }
             }
-            field[fromX, fromY] = from;
-            field[toX, toY] = to;
             return true;
         }
 
@@ -74,17 +71,16 @@ namespace Common
             if (robot <= 0) return false;
             int toX, toY;
             if (TransformDirection(dir, fromX, fromY, out toX, out toY)) return false;
-            GameMass from = field[fromX, fromY], to = field[toX, toY];
-            int player = from.Player;
-            if (from.ActiveRobot < robot) return false;
-            if (from.Ter == Terrain.Hole) return false;
-            if (to.Player == player)
+            int player = field[fromX, fromY].Player;
+            if (field[fromX, fromY].ActiveRobot < robot) return false;
+            if (field[fromX, fromY].Ter == Terrain.Hole) return false;
+            if (field[toX, toY].Player == player)
             {
-                if (to.Ter == Terrain.Outside) return false;
+                if (field[toX, toY].Ter == Terrain.Outside) return false;
             }
             else
             {
-                if (to.Ter != Terrain.Wasteland && to.Ter != Terrain.Hole) return false;
+                if (field[toX, toY].Ter != Terrain.Wasteland && field[toX, toY].Ter != Terrain.Hole) return false;
             }
             return true;
         }

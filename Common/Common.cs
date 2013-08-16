@@ -15,10 +15,16 @@ namespace Common
         public int WaitRobot;
     }
 
-    public struct IntPoint
+    public struct Point
     {
         public int X;
         public int Y;
+
+        public override bool Equals(object obj)
+        {
+            Point temp = (Point)obj;
+            return X == temp.X && Y == temp.Y;
+        }
     }
 
     public enum Terrain
@@ -44,12 +50,6 @@ namespace Common
         Left,
         UpperLeft,
         UpperRight,
-    }
-
-    public interface GameAI
-    {
-        string Prepare(int player, GameField field);
-        void Think(int turn, int maxTurn, int player, GameField field, Commander commander);
     }
 
     public interface Commander

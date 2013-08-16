@@ -32,9 +32,9 @@ namespace Visualizer
         {
             InitializeComponent();
             manager = new GameManager(new Random());
-            manager.AI[0] = new KamikazeAI();
-            manager.AI[1] = new KamikazeAI();
-            manager.AI[2] = new KamikazeAI();
+            manager.AI[0] = new ColonizeAI();
+            manager.AI[1] = new TestAI();
+            manager.AI[2] = new TestAI();
             manager.Prepare();
             int w = manager.Field.Width, h = manager.Field.Height;
             mass = new MassInformation[w, h];
@@ -123,7 +123,8 @@ namespace Visualizer
             UpdateInfo();
             if (AutoNext.IsChecked == true && !manager.IsGameOver())
             {
-                Task.Run((Action)RunTurn);
+                Task task = new Task((Action)RunTurn);
+                task.Start();
                 return;
             }
             NextButton.IsEnabled = true;
@@ -134,7 +135,8 @@ namespace Visualizer
         {
             if (!NextButton.IsEnabled) return;
             NextButton.IsEnabled = false;
-            Task.Run((Action)RunTurn);
+            Task task = new Task((Action)RunTurn);
+            task.Start();
         }
 
         private void ShowChangeHandler(object sender, RoutedEventArgs e)

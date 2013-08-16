@@ -20,5 +20,32 @@ namespace Common
             }
             return result;
         }
+
+        public static Point GetInitialPoint(this GameField field, int player)
+        {
+            int w = field.Width, h = field.Height;
+            for (int x = 0; x < w; x++)
+            {
+                for (int y = 0; y < h; y++)
+                {
+                    if (field[x, y].Ter == Terrain.Initial && field[x, y].Player == player)
+                    {
+                        return new Point { X = x, Y = y };
+                    }
+                }
+            }
+            throw new Exception();
+        }
+
+        public static bool IsLiberate(this GameField field, Point point)
+        {
+            for(int i=0;i<7;i++)
+            {
+                Point temp = field.TransformDirection(i, point);
+                if (!field.IsInRange(temp)) return false;
+                if (field[temp].Ter != Terrain.Wasteland) return false;
+            }
+            return true;
+        }
     }
 }

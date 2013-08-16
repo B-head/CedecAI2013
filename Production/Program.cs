@@ -11,7 +11,7 @@ namespace Production
     {
         static void Main(string[] args)
         {
-            GameAI ai = new TestAI();
+            GameAI ai = new ColonizeAI();
             LinkGameField field = LinkGameField.ParseText();
             Console.WriteLine(ai.Prepare(field.Player, field));
             for (int i = 0; i < field.MaxTurn; i++)

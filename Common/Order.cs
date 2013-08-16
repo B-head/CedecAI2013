@@ -7,11 +7,11 @@ namespace Common
 {
     public abstract class Order : IComparable<Order>
     {
-        int priority;
+        public readonly int Priority;
 
         public Order(int priority)
         {
-            this.priority = priority;
+            this.Priority = priority;
         }
 
         public abstract bool Execute(GameField field, Commander commander);
@@ -26,7 +26,7 @@ namespace Common
             return commander.IsMove || commander.IsBuild || commander.IsFinish;
         }
 
-        protected void NearRobotMove(int x, int y, int robot, GameField field, Commander commander)
+        protected bool NearRobotMove(int x, int y, int robot, GameField field, Commander commander)
         {
             SearchNearRobot search = new SearchNearRobot(field, commander.Player, x, y);
             int moveCount = 0, tx, ty;
@@ -35,71 +35,75 @@ namespace Common
             {
                 if (search.Next(out tx, out ty, out dir)) break;
                 int moveRobot = Math.Min(field[tx, ty].ActiveRobot, robot - moveCount);
-                field.Move(tx, ty, dir, moveRobot);
+                if (!field.Move(tx, ty, dir, moveRobot)) throw new Exception();
                 if (dir != Direction.Center)
                 {
                     commander.Move(tx, ty, dir, moveRobot);
                 }
                 moveCount += moveRobot;
             }
+            return false;
         }
 
         public int CompareTo(Order other)
         {
-            return priority - other.priority;
+            return Priority - other.Priority;
         }
     }
 
-    public class OrderMove : Order
+    public class OrderSecure : Order
     {
-        int x;
-        int y;
-        int robot;
-        bool once;
+        public readonly int X;
+        public readonly int Y;
+        public readonly int Robot;
+        public readonly bool Once;
 
-        public OrderMove(int priority, int x, int y, int robot, bool once)
+        public OrderSecure(int priority, int x, int y, int robot, bool once)
             : base(priority)
         {
-            this.x = x;
-            this.y = y;
-            this.robot = robot;
-            this.once = once;
+            this.X = x;
+            this.Y = y;
+            this.Robot = robot;
+            this.Once = once;
         }
 
         public override bool Execute(GameField field, Commander commander)
         {
-            if (IsForbidMove(commander)) return once;
-            NearRobotMove(x, y, robot, field, commander);
-            return once;
+            if (IsForbidMove(commander)) return Once;
+            if (field[X, Y].Ter != Terrain.Wasteland) return true;
+            if (NearRobotMove(X, Y, Robot, field, commander)) return true;
+            return Once;
         }
     }
 
     public class OrderBuild : Order
     {
-        int x;
-        int y;
-        Terrain building;
+        public readonly int X;
+        public readonly int Y;
+        public readonly Terrain Building;
+        public readonly bool Once;
 
-        public OrderBuild(int priority, int x, int y, Terrain building)
+        public OrderBuild(int priority, int x, int y, Terrain building, bool once)
             : base(priority)
         {
-            this.x = x;
-            this.y = y;
-            this.building = building;
+            this.X = x;
+            this.Y = y;
+            this.Building = building;
+            this.Once = once;
         }
 
         public override bool Execute(GameField field, Commander commander)
         {
-            if (!IsForbidBuild(commander) || field.IsBuild(x, y, building))
+            if (!IsForbidBuild(commander) && field.IsBuild(X, Y, Building))
             {
-                commander.Build(x, y, building);
+                commander.Build(X, Y, Building);
                 return true;
             }
-            if (IsForbidMove(commander)) return false;
+            if (IsForbidMove(commander)) return Once;
             int resource, robot;
-            field.GetRequirement(building, out resource, out robot);
-            NearRobotMove(x, y, robot, field, commander);
-            return false;
+            field.GetRequirement(Building, out resource, out robot);
+            if (NearRobotMove(X, Y, robot + resource, field, commander)) return true;
+            return Once;
         }
     }
 }

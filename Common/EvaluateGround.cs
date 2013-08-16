@@ -74,27 +74,47 @@ namespace Common
             return true;
         }
 
-        public bool TransformSitePropose(int i, int x, int y, out int tx, out int ty)
+        public int GetMaxEvaluate()
         {
-            tx = x;
-            ty = y;
-            switch (i)
+            int result = 0;
+            for (int x = 0; x < Width; x++)
             {
-                case 0: tx += 1; ty += 0; break;
-                case 1: tx += 1; ty += -1; break;
-                case 2: tx += 0; ty += 1; break;
-                case 3: tx += -1; ty += 0; break;
-                case 4: tx += -1; ty += 1; break;
-                case 5: tx += 0; ty += -1; break;
-                case 6: tx += 1; ty += 1; break;
-                case 7: tx += -1; ty += 2; break;
-                case 8: tx += -2; ty += 1; break;
-                case 9: tx += -1; ty += -1; break;
-                case 10: tx += 1; ty += -2; break;
-                case 11: tx += 2; ty += -1; break;
-                default: throw new Exception();
+                for (int y = 0; y < Height; y++)
+                {
+                    if (field[x, y] == Obstacle) continue;
+                    result = Math.Max(result, field[x, y]);
+                }
             }
-            return !IsInRange(tx, ty);
+            return result;
+        }
+
+        //todo 重複して探査している。
+        public void GetNearEvaluate(int ev, int player, int cx, int cy, out int nx, out int ny)
+        {
+            Queue<Point> queue = new Queue<Point>();
+            queue.Enqueue(new Point { X = cx, Y = cy });
+            DistanceMap distance = new DistanceMap(gameField, player, cx, cy);
+            while (queue.Count > 0)
+            {
+                Point point = queue.Dequeue();
+                int tx, ty;
+                for (int i = 1; i < 7; i++)
+                {
+                    if (TransformDirection(i, point.X, point.Y, out tx, out ty)) continue;
+                    if (distance[point.X,point.Y] + 1 == distance[tx,ty])
+                    {
+                        queue.Enqueue(new Point { X = tx, Y = ty });
+                    }
+                }
+                if (field[point.X, point.Y] == ev)
+                {
+                    nx = point.X;
+                    ny = point.Y;
+                    return;
+                }
+            }
+            nx = -1;
+            ny = -1;
         }
     }
 }
