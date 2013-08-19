@@ -20,175 +20,211 @@ namespace Common
 
         protected void Initialize()
         {
-            for (int x = 0; x < Width; x++)
+            foreach(Point point in Iterator())
             {
-                for (int y = 0; y < Height; y++)
+                GameMass temp = new GameMass();
+                temp.Player = -1;
+                if (IsWastelandInitalize(point))
                 {
-                    field[x, y].Player = -1;
-                    if (y < 0 || y >= Height) continue;
-                    if (y < Size)
-                    {
-                        if (x < Size - 1 - y || x >= Width) continue;
-                    }
-                    else
-                    {
-                        if (x < 0 || x >= Width + Size - 1 - y) continue;
-                    }
-                    field[x, y].Ter = Terrain.Wasteland;
+                    temp.Terrain = Terrain.Wasteland;
                 }
+                this[point] = temp;
             }
         }
 
-        public bool Move(int fromX, int fromY, Direction dir, int robot)
+        private bool IsWastelandInitalize(Point point)
         {
-            if (!IsMove(fromX, fromY, dir, robot)) return false;
-            int toX, toY;
-            TransformDirection(dir, fromX, fromY, out toX, out toY);
-            int player = field[fromX, fromY].Player;
-            if (field[toX, toY].Player == player)
+            if (point.Y < 0 || point.Y >= Height) return false;
+            if (point.Y < Size)
             {
-                field[fromX, fromY].ActiveRobot -= robot;
-                field[toX, toY].WaitRobot += robot;
+                if (point.X < Size - 1 - point.Y || point.X >= Width) return false;
             }
             else
             {
-                field[fromX, fromY].ActiveRobot -= robot;
-                if (field[toX, toY].WaitRobot < robot)
+                if (point.X < 0 || point.X >= Width + Size - 1 - point.Y) return false;
+            }
+            return true;
+        }
+
+        public bool Move(Point from, Direction dir, int robot)
+        {
+            Point to = TransformDirection(dir, from);
+            if (!IsMove(from, to, dir, robot)) return false;
+            GameMass fromMass = this[from], toMass = this[to];
+            if (from == to)
+            {
+                fromMass.ActiveRobot -= robot;
+                fromMass.WaitRobot += robot;
+                this[from] = fromMass;
+                return true;
+            }
+            if (fromMass.Player == toMass.Player)
+            {
+                fromMass.ActiveRobot -= robot;
+                toMass.WaitRobot += robot;
+            }
+            else
+            {
+                fromMass.ActiveRobot -= robot;
+                if (toMass.WaitRobot < robot)
                 {
-                    field[toX, toY].WaitRobot = robot - field[toX, toY].WaitRobot;
-                    field[toX, toY].Player = player;
+                    toMass.WaitRobot = robot - toMass.WaitRobot;
+                    toMass.Player = fromMass.Player;
                 }
                 else
                 {
-                    field[toX, toY].WaitRobot -= robot;
+                    toMass.WaitRobot -= robot;
                 }
             }
+            this[from] = fromMass;
+            this[to] = toMass;
             return true;
         }
 
-        public bool IsMove(int fromX, int fromY, Direction dir, int robot)
+        public bool IsMove(Point from, Direction dir, int robot)
+        {
+            Point to = TransformDirection(dir, from);
+            return IsMove(from, to, dir, robot);
+        }
+
+        public bool IsMove(Point from, Point to, Direction dir, int robot)
         {
             if (robot <= 0) return false;
-            int toX, toY;
-            if (TransformDirection(dir, fromX, fromY, out toX, out toY)) return false;
-            int player = field[fromX, fromY].Player;
-            if (field[fromX, fromY].ActiveRobot < robot) return false;
-            if (field[fromX, fromY].Ter == Terrain.Hole) return false;
-            if (field[toX, toY].Player == player)
+            if (!IsInRange(to)) return false;
+            GameMass fromMass = this[from], toMass = this[to];
+            if (fromMass.ActiveRobot < robot) return false;
+            if (!IsOutMove(from) && dir != Direction.Center) return false;
+            if (!IsInMove(to, fromMass.Player == toMass.Player)) return false;
+            return true;
+        }
+
+        public bool IsInMove(Point point, bool have)
+        {
+            if (have)
             {
-                if (field[toX, toY].Ter == Terrain.Outside) return false;
+                return this[point].Terrain != Terrain.Outside;
             }
             else
             {
-                if (field[toX, toY].Ter != Terrain.Wasteland && field[toX, toY].Ter != Terrain.Hole) return false;
+                return this[point].Terrain == Terrain.Wasteland || this[point].Terrain == Terrain.Hole;
             }
-            return true;
         }
 
-        public bool Build(int x, int y, Terrain building, ref int extraPoint)
+        public bool IsOutMove(Point point)
         {
-            if (!IsBuild(x, y, building)) return false;
-            int resource, robot;
-            GetRequirement(building, out resource, out robot);
+            return this[point].Terrain != Terrain.Hole;
+        }
+
+        public bool Build(Point point, Terrain building, ref int extraPoint)
+        {
+            if (!IsBuild(point, building)) return false;
             if (building == Terrain.Town)
             {
-                extraPoint += GetPrepareResource(x, y) - resource;
-                int tx, ty, player = field[x,y].Player;
-                for (int i = 1; i < 7; i++)
+                extraPoint += GetPrepareResource(point, this[point].Player) - GetNeedResource(building);
+                foreach(Point temp in Adjoin(point))
                 {
-                    if (TransformDirection(i, x, y, out tx, out ty)) continue;
-                    if (field[tx, ty].Player != player) continue;
-                    if (field[tx, ty].Ter != Terrain.Wasteland) continue;
-                    field[tx, ty].Ter = Terrain.House;
+                    if (this[point].Player != this[temp].Player) continue;
+                    if (this[temp].Terrain != Terrain.Wasteland) continue;
+                    GameMass tempMass = this[temp];
+                    tempMass.Terrain = Terrain.House;
+                    this[temp] = tempMass;
                 }
             }
-            field[x, y].ActiveRobot -= robot;
-            field[x, y].Ter = building;
+            GameMass mass = this[point];
+            mass.ActiveRobot -= GetNeedRobot(building);
+            mass.Terrain = building;
+            this[point] = mass;
             return true;
         }
 
-        public bool IsBuild(int x, int y, Terrain building)
+        public bool IsBuild(Point point, Terrain building)
         {
-            if (field[x, y].Ter != Terrain.Wasteland && field[x, y].Ter != Terrain.Hole) return false;
-            if (field[x, y].Ter == Terrain.Wasteland && building == Terrain.Bridge) return false;
-            if (field[x, y].Ter == Terrain.Hole && building != Terrain.Bridge) return false;
-            int resource, robot;
-            GetRequirement(building, out resource, out robot);
-            if (field[x, y].ActiveRobot < robot) return false;
-            if (GetPrepareResource(x, y) < resource) return false;
+            if (!IsProperTerrain(point, building)) return false;
+            if (this[point].ActiveRobot < GetNeedRobot(building)) return false;
+            if (GetPrepareResource(point, this[point].Player) < GetNeedResource(building)) return false;
             return true;
         }
 
-        public void StartTurn(int player)
+        public bool IsProperTerrain(Point point, Terrain building)
         {
-            for (int x = 0; x < Width; x++)
+            if (this[point].Terrain == Terrain.Wasteland)
             {
-                for (int y = 0; y < Height; y++)
-                {
-                    if (field[x, y].Player == player)
-                    {
-                        field[x, y].WaitRobot += GetAddRobot(x, y);
-                        field[x, y].ActiveRobot += field[x, y].WaitRobot;
-                        field[x, y].WaitRobot = 0;
-                    }
-                    else
-                    {
-                        if (field[x, y].WaitRobot <= 0) continue;
-                        field[x, y].WaitRobot -= GetTowerDamage(player, x, y);
-                        if (field[x, y].WaitRobot < 0) field[x, y].WaitRobot = 0;
-                    }
-                }
+                return (int)building >= 4 && (int)building <= 8;
+            }
+            else if (this[point].Terrain == Terrain.Hole)
+            {
+                return building == Terrain.Bridge;
+            }
+            else
+            {
+                return false;
             }
         }
 
-        public void EndTurn(int player)
-        {
-            for (int x = 0; x < Width; x++)
-            {
-                for (int y = 0; y < Height; y++)
-                {
-                    if (field[x, y].Player != player) continue;
-                    field[x, y].WaitRobot += field[x, y].ActiveRobot;
-                    field[x, y].ActiveRobot = 0;
-                }
-            }
-        }
-
-        public void GetRequirement(Terrain ter, out int resource, out int robot)
+        public int GetNeedRobot(Terrain ter)
         {
             switch (ter)
             {
-                case Terrain.RobotMaker: resource = 4; robot = 50; break;
-                case Terrain.AttackTower: resource = 5; robot = 25; break;
-                case Terrain.Excavator: resource = 4; robot = 25; break;
-                case Terrain.Bridge: resource = 4; robot = 15; break;
-                case Terrain.House: resource = 4; robot = 10; break;
-                case Terrain.Town: resource = 9; robot = 10; break;
+                case Terrain.RobotMaker: return 50;
+                case Terrain.AttackTower: return 25;
+                case Terrain.Excavator: return 25;
+                case Terrain.Bridge: return 15;
+                case Terrain.House: return 10;
+                case Terrain.Town: return 10;
                 default: throw new Exception();
             }
         }
 
-        public int GetTotalVictoryPoint(int player)
+        public int GetNeedResource(Terrain ter)
+        {
+            switch (ter)
+            {
+                case Terrain.RobotMaker: return 4;
+                case Terrain.AttackTower: return 5;
+                case Terrain.Excavator: return 4;
+                case Terrain.Bridge: return 4;
+                case Terrain.House: return 4;
+                case Terrain.Town: return 9;
+                default: throw new Exception();
+            }
+        }
+
+        public int GetPrepareResource(Point point, int player, bool latent = false)
         {
             int result = 0;
-            for (int x = 0; x < Width; x++)
+            foreach(Point temp in Adjoin(point, true))
             {
-                for (int y = 0; y < Height; y++)
-                {
-                    if (field[x, y].Player != player) continue;
-                    result += GetVictoryPoint(x, y);
-                }
+                if (!latent && player != this[temp].Player) continue;
+                result += GetYieldResource(temp, player);
             }
             return result;
         }
 
-        public int GetVictoryPoint(int x, int y)
+        public int GetYieldResource(Point point, int player)
         {
-            if (field[x, y].Ter == Terrain.Wasteland)
+            if (this[point].Terrain != Terrain.Wasteland) return 0;
+            int result = 1;
+            foreach (Point temp in Adjoin(point))
+            {
+                if (player != this[temp].Player) continue;
+                if (!IsExcavator(temp)) continue;
+                result++;
+            }
+            return result;
+        }
+
+        public bool IsExcavator(Point point)
+        {
+            return this[point].Terrain == Terrain.Excavator;
+        }
+
+        public int GetVictoryPoint(Point point)
+        {
+            if (this[point].Terrain == Terrain.Wasteland)
             {
                 return 1;
             }
-            else if (field[x, y].Ter == Terrain.Hole || field[x, y].Ter == Terrain.Outside)
+            else if (this[point].Terrain == Terrain.Hole || this[point].Terrain == Terrain.Outside)
             {
                 return 0;
             }
@@ -198,13 +234,13 @@ namespace Common
             }
         }
 
-        public int GetAddRobot(int x, int y)
+        public int GetAddRobot(Point point)
         {
-            if (field[x, y].Ter == Terrain.Initial)
+            if (this[point].Terrain == Terrain.Initial)
             {
                 return 5;
             }
-            else if (field[x, y].Ter == Terrain.RobotMaker)
+            else if (this[point].Terrain == Terrain.RobotMaker)
             {
                 return 1;
             }
@@ -214,67 +250,23 @@ namespace Common
             }
         }
 
-        public int GetTowerDamage(int player, int x, int y)
+        public int GetTowerDamage(Point point, int player, bool estimate = false)
         {
-            if (field[x, y].Player == player) return 0;
-            int result = 0, tx, ty;
-            for (int i = 0; i < 12; i++)
+            if (!estimate && this[point].Player == player) return 0;
+            int result = 0;
+            foreach (Point temp in TowerRange(point))
             {
-                if (TransformTowerRange(i, x, y, out tx, out ty)) continue;
-                if (field[tx, ty].Ter != Terrain.AttackTower) continue;
-                if (field[tx, ty].Player != player) continue;
-                result += 2;
+                if (this[temp].Terrain != Terrain.AttackTower) continue;
+                if (this[temp].Player == player)
+                {
+                    result += estimate ? 2 : 0;
+                }
+                else
+                {
+                    result += estimate ? 0 : 2;
+                }
             }
             return result;
-        }
-
-        public int GetPrepareResource(int x, int y)
-        {
-            int result = 0, player = field[x, y].Player, tx, ty;
-            for (int i = 0; i < 7; i++)
-            {
-                if (TransformDirection(i, x, y, out tx, out ty)) continue;
-                if (field[tx, ty].Player != player) continue;
-                result += GetYieldResource(tx, ty);
-            }
-            return result;
-        }
-
-        public int GetYieldResource(int x, int y)
-        {
-            if (field[x, y].Ter != Terrain.Wasteland) return 0;
-            int result = 1, player = field[x, y].Player, tx, ty;
-            for (int i = 1; i < 7; i++)
-            {
-                if (TransformDirection(i, x, y, out tx, out ty)) continue;
-                if (field[tx, ty].Player != player) continue;
-                if (field[tx, ty].Ter != Terrain.Excavator) continue;
-                result++;
-            }
-            return result;
-        }
-
-        public bool TransformTowerRange(int i, int x, int y, out int tx, out int ty)
-        {
-            tx = x;
-            ty = y;
-            switch (i)
-            {
-                case 0: tx += 1; ty += 0; break;
-                case 1: tx += 1; ty += -1; break;
-                case 2: tx += 0; ty += 1; break;
-                case 3: tx += -1; ty += 0; break;
-                case 4: tx += -1; ty += 1; break;
-                case 5: tx += 0; ty += -1; break;
-                case 6: tx += 2; ty += 0; break;
-                case 7: tx += 2; ty += -2; break;
-                case 8: tx += 0; ty += 2; break;
-                case 9: tx += -2; ty += 0; break;
-                case 10: tx += -2; ty += 2; break;
-                case 11: tx += 0; ty += -2; break;
-                default: throw new Exception();
-            }
-            return !IsInRange(tx, ty);
         }
     }
 }

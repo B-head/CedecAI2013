@@ -9,8 +9,10 @@
         </Grid.ColumnDefinitions>
         <Canvas x:Name="FieldInfo" Margin="0" ClipToBounds="True"/>
         <StackPanel Grid.Column="1" Margin="10">
-            <Button x:Name="NextButton" Content="Next" Click="NextTurnHandler"/>
+            <Button x:Name="NextButton" Content="Next turn" Click="NextTurnHandler"/>
             <CheckBox x:Name="AutoNext" Content="Auto" HorizontalAlignment="Center" Checked="NextTurnHandler"/>
+            <Label Content="Player infomartion"/>
+            <TextBlock x:Name="TurnInfo" Text="Turn"/>
             <TextBlock x:Name="Player1Info" Text="Player1" Foreground="Red"/>
             <TextBlock x:Name="Player2Info" Text="Player2" Foreground="Blue"/>
             <TextBlock x:Name="Player3Info" Text="Player3" Foreground="Green"/>
@@ -19,7 +21,6 @@
             <CheckBox x:Name="ShowResource" Content="Resource" Click="ShowChangeHandler"/>
             <CheckBox x:Name="ShowTowerDamage" Content="Tower damage" Click="ShowChangeHandler"/>
             <CheckBox x:Name="ShowDistanse" Content="Distance" Click="ShowChangeHandler"/>
-            <CheckBox x:Name="ShowEvaluate" Content="Evaluate" Click="ShowChangeHandler"/>
         </StackPanel>
         <GridSplitter Width="1" IsEnabled="False" Background="Black" Margin="0"/>
     </Grid>

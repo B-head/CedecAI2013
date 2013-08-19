@@ -31,7 +31,7 @@ namespace Common
             plan = new List<TownPlan>();
             foreach (Point point in field.Iterator())
             {
-                if (field[point].Ter != Terrain.Wasteland) continue;
+                if (field[point].Terrain != Terrain.Wasteland) continue;
                 SearchPlan(field, point, 0, new int[0]);
             }
             foreach (TownPlan tp in plan)
@@ -42,10 +42,9 @@ namespace Common
 
         private void SearchPlan(GameField field, Point excavator, int dir, int[] townDir)
         {
-            Point town;
             for (int i = dir; i < 12; i++)
             {
-                field.TransformSitePropose(i, excavator, out town);
+                Point town = field.TransformSitePropose(i, excavator);
                 if (!field.IsInRange(town)) continue;
                 if (!IsPlanLiberate(i, townDir)) continue;
                 if (!field.IsLiberate(town)) continue;
@@ -80,11 +79,10 @@ namespace Common
         private TownPlan ToTownPlan(GameField field, Point excavator, int[] townDir)
         {
             Point[] town = new Point[townDir.Length];
-            Point temp;
             int victory = 3, spend = 25;
             for (int i = 0; i < townDir.Length; i++)
             {
-                field.TransformSitePropose(townDir[i], excavator, out temp);
+                Point temp = field.TransformSitePropose(townDir[i], excavator);
                 town[i] = temp;
                 spend += 10;
                 victory += townDir[i] % 2 == 0 ? 18 : 21;

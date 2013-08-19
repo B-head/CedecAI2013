@@ -10,7 +10,7 @@ namespace Visualizer
     class GameManager
     {
         public GenerateGameField Field;
-        public GameAI[] AI;
+        public IGameAI[] AI;
         public string[] Name;
         public int[] ExtraPoint;
         public int Player;
@@ -20,7 +20,7 @@ namespace Visualizer
         public GameManager(Random random)
         {
             Field = new GenerateGameField(7, random);
-            AI = new GameAI[3];
+            AI = new IGameAI[3];
             Name = new string[3];
             ExtraPoint = new int[3];
             Player = 0;
@@ -52,9 +52,14 @@ namespace Visualizer
             }
         }
 
+        public string GetTurnInfo()
+        {
+            return "Player" + (Player + 1).ToString() + " Turn:" + Turn.ToString() + "/" + MaxTurn.ToString();
+        }
+
         public string GetPlayerInfo(int player)
         {
-            return Name[0] + "\nVP:" + Field.GetTotalVictoryPoint(player).ToString() + "+" + ExtraPoint[player];
+            return Name[player] + "\nVP:" + Field.GetTotalVictoryPoint(player).ToString() + "+" + ExtraPoint[player];
         }
 
         public bool IsGameOver()
@@ -66,7 +71,7 @@ namespace Visualizer
             return Turn > MaxTurn;
         }
 
-        class ManagerCommander : Commander
+        class ManagerCommander : ICommander
         {
             GameManager parent;
             public bool IsMove { get; private set; }
@@ -90,7 +95,7 @@ namespace Visualizer
             {
                 if (IsFinish || IsBuild) throw new Exception();
                 if (parent.Field[x, y].Player != Player) throw new Exception();
-                if (!parent.Field.Move(x, y, dir, robot)) throw new Exception();
+                if (!parent.Field.Move(new Point { X = x, Y = y }, dir, robot)) throw new Exception();
                 IsMove = true;
             }
 
@@ -98,7 +103,7 @@ namespace Visualizer
             {
                 if (IsFinish || IsBuild || IsMove) throw new Exception();
                 if (parent.Field[x, y].Player != Player) throw new Exception();
-                if (!parent.Field.Build(x, y, building, ref parent.ExtraPoint[parent.Player])) throw new Exception();
+                if (!parent.Field.Build(new Point { X = x, Y = y }, building, ref parent.ExtraPoint[parent.Player])) throw new Exception();
                 IsBuild = true;
             }
 

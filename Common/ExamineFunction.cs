@@ -8,30 +8,13 @@ namespace Common
 {
     public static class ExamineFunction
     {
-        public static int GetEstimateTowerDamage(this GameField field, int player, int x, int y)
-        {
-            int result = 0, tx, ty;
-            for (int i = 1; i < 13; i++)
-            {
-                if (field.TransformTowerRange(i, x, y, out tx, out ty)) continue;
-                if (field[tx, ty].Ter != Terrain.AttackTower) continue;
-                if (field[tx, ty].Player == player) continue;
-                result += 2;
-            }
-            return result;
-        }
-
         public static Point GetInitialPoint(this GameField field, int player)
         {
-            int w = field.Width, h = field.Height;
-            for (int x = 0; x < w; x++)
+            foreach(Point point in field.Iterator())
             {
-                for (int y = 0; y < h; y++)
+                if (field[point].Terrain == Terrain.Initial && field[point].Player == player)
                 {
-                    if (field[x, y].Ter == Terrain.Initial && field[x, y].Player == player)
-                    {
-                        return new Point { X = x, Y = y };
-                    }
+                    return point;
                 }
             }
             throw new Exception();
@@ -39,13 +22,34 @@ namespace Common
 
         public static bool IsLiberate(this GameField field, Point point)
         {
-            for(int i=0;i<7;i++)
+            int count = 0;
+            foreach (Point temp in field.Adjoin(point, true))
             {
-                Point temp = field.TransformDirection(i, point);
-                if (!field.IsInRange(temp)) return false;
-                if (field[temp].Ter != Terrain.Wasteland) return false;
+                if (field[temp].Terrain != Terrain.Wasteland) return false;
+                count++;
             }
-            return true;
+            return count >= 7;
+        }
+
+        public static IEnumerable<Point> NearIterator(this GameField field, Point center, int player)
+        {
+            bool[,] searched = new bool[field.Width, field.Height];
+            Queue<Point> queue = new Queue<Point>();
+            queue.Enqueue(center);
+            while (queue.Count > 0)
+            {
+                Point current = queue.Dequeue();
+                foreach (Point point in field.Adjoin(current))
+                {
+                    if (searched[point.X, point.Y]) continue;
+                    if (field.IsInMove(point, field[point].Player == player) && field.IsOutMove(point))
+                    {
+                        queue.Enqueue(point);
+                        searched[point.X, point.Y] = true;
+                    }
+                }
+                yield return current;
+            }
         }
     }
 }

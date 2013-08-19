@@ -39,11 +39,11 @@ namespace Production
                 Terrain ter = ParseTerrain(line[5], line[6]);
                 if (player == playerTurn)
                 {
-                    result.field[x, y] = new GameMass { Player = player, Ter = ter, ActiveRobot = robot };
+                    result.field[x, y] = new GameMass { Player = player, Terrain = ter, ActiveRobot = robot };
                 }
                 else
                 {
-                    result.field[x, y] = new GameMass { Player = player, Ter = ter, WaitRobot = robot };
+                    result.field[x, y] = new GameMass { Player = player, Terrain = ter, WaitRobot = robot };
                 }
             }
             if (Console.ReadLine() != "EOS") throw new Exception();
@@ -76,7 +76,7 @@ namespace Production
             }
         }
 
-        public Commander GetCommander()
+        public ICommander GetCommander()
         {
             return new LinkCommander(this);
         }
@@ -93,7 +93,7 @@ namespace Production
             y += Size - 1;
         }
 
-        class LinkCommander : Commander
+        class LinkCommander : ICommander
         {
             LinkGameField parent;
             public bool IsMove { get; private set; }

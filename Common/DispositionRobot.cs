@@ -16,51 +16,34 @@ namespace Common
 
         public void AddMoveOrder(int priority, Point point, int robot, bool once)
         {
-            AddMoveOrder(priority, point.X, point.Y, robot, once);
-        }
-
-        public void AddMoveOrder(int priority, int x, int y, int robot, bool once)
-        {
-            OrderSecure temp = new OrderSecure(priority, x, y, robot, once);
+            OrderSecure temp = new OrderSecure(priority, once, point, robot);
             Add(temp);
         }
 
         public void AddBuildOrder(int priority, Point point, Terrain building, bool once)
         {
-            AddBuildOrder(priority, point.X, point.Y, building, once);
-        }
-
-        public void AddBuildOrder(int priority, int x, int y, Terrain building, bool once)
-        {
-            OrderBuild temp = new OrderBuild(priority, x, y, building, once);
+            OrderBuild temp = new OrderBuild(priority, once, point, building);
             Add(temp);
         }
 
         public void AddSecureResource(int priority, Point point, GameField field)
         {
-            AddSecureResource(priority, point.X, point.Y, field);
-        }
-
-        public void AddSecureResource(int priority, int x, int y, GameField field)
-        {
-            int tx, ty;
-            for (int i = 1; i < 7; i++)
+            foreach(Point temp in field.Adjoin(point))
             {
-                if (field.TransformDirection(i, x, y, out tx, out ty)) continue;
-                if (field[tx, ty].Ter != Terrain.Wasteland || field[tx, ty].Player == Player) continue;
-                AddMoveOrder(priority, tx, ty, field[tx, ty].WaitRobot + 1, true);
+                if (field[temp].Terrain != Terrain.Wasteland) continue;
+                AddMoveOrder(priority, temp, field[temp].WaitRobot + 1, true);
             }
         }
 
-        public void AddSecureGround(int borderRobot, int priority, Point initial, GameField field)
+        public void AddSecureGround(int priority, int borderRobot, Point initial, GameField field)
         {
-            SearchSecureGround(borderRobot, priority, initial, field, new bool[field.Width, field.Height]);
+            SearchSecureGround(priority, borderRobot, initial, field, new bool[field.Width, field.Height]);
         }
 
-        private void SearchSecureGround(int borderRobot, int priority, Point point, GameField field, bool[,] searched)
+        private void SearchSecureGround(int priority, int borderRobot, Point point, GameField field, bool[,] searched)
         {
             searched[point.X, point.Y] = true;
-            if (field[point].Player != Player && field[point].Ter == Terrain.Wasteland)
+            if (field[point].Player != Player && field[point].Terrain == Terrain.Wasteland)
             {
                 if (field[point].WaitRobot <= borderRobot)
                 {
@@ -71,7 +54,7 @@ namespace Common
             foreach (Point temp in field.Adjoin(point))
             {
                 if (searched[temp.X, temp.Y]) continue;
-                SearchSecureGround(borderRobot, priority, temp, field, searched);
+                SearchSecureGround(priority, borderRobot, temp, field, searched);
             }
         }
 
@@ -87,17 +70,18 @@ namespace Common
             }
         }
 
-        public void Dispose(GameField field, Commander commander)
+        public void Dispose(GameField field, ICommander commander)
         {
             Sort();
             for (int i = Count - 1; i >= 0; i--)
             {
-                if (this[i].Execute(field, commander))
+                if (this[i].Execute(field, commander) || this[i].Once)
                 {
-                    RemoveAt(i);
+                    this[i] = null;
                 }
             }
             commander.Finish();
+            RemoveAll(o => o == null);
         }
     }
 }

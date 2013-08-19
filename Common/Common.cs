@@ -10,41 +10,69 @@ namespace Common
     public struct GameMass
     {
         public int Player;
-        public Terrain Ter;
+        public Terrain Terrain;
         public int ActiveRobot;
         public int WaitRobot;
     }
 
-    public struct Point
+    public struct Point : IEquatable<Point>
     {
         public int X;
         public int Y;
 
+        public override string ToString()
+        {
+            return String.Format("{0}, {1}", X, Y);
+        }
+
+        public override int GetHashCode()
+        {
+            return X ^ Y;
+        }
+
         public override bool Equals(object obj)
         {
-            Point temp = (Point)obj;
-            return X == temp.X && Y == temp.Y;
+            if (obj is Point)
+            {
+                return Equals((Point)obj);
+            }
+            return false;
+        }
+
+        public bool Equals(Point other)
+        {
+            return X.Equals(other.X) && Y.Equals(other.Y);
+        }
+
+        public static bool operator ==(Point lhs, Point rhs)
+        {
+            return lhs.Equals(rhs);
+        }
+
+        public static bool operator !=(Point lhs, Point rhs)
+        {
+            return !lhs.Equals(rhs);
         }
     }
 
     public enum Terrain
     {
-        Outside,
+        Outside = 0,
         Wasteland,
         Hole,
         Initial,
-        RobotMaker,
+        RobotMaker = 4,
         AttackTower,
         Excavator,
-        Bridge,
         House,
         Town,
+        Bridge = 9,
     }
 
     public enum Direction
     {
-        Center,
-        Right,
+        Center = 0,
+        Right = 1,
         DownerRight,
         DownerLeft,
         Left,
@@ -52,7 +80,7 @@ namespace Common
         UpperRight,
     }
 
-    public interface Commander
+    public interface ICommander
     {
         bool IsMove { get; }
         bool IsBuild { get; }
