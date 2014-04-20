@@ -14,47 +14,53 @@ namespace Common
             Player = player;
         }
 
-        public void AddMoveOrder(int priority, Point point, int robot, bool once)
+        public void AddMoveOrder(int priority, Point point, int robot)
         {
-            OrderSecure temp = new OrderSecure(priority, once, point, robot);
+            OrderMove temp = new OrderMove(priority, point, robot);
             Add(temp);
         }
 
-        public void AddBuildOrder(int priority, Point point, Terrain building, bool once)
+        public void AddBuildOrder(int priority, Point point, Terrain building)
         {
-            OrderBuild temp = new OrderBuild(priority, once, point, building);
-            Add(temp);
+            OrderBuild b = new OrderBuild(priority, point, building);
+            Add(b);
         }
 
-        public void AddSecureResource(int priority, Point point, GameField field)
+        public void AddSecureResource(int priority, Point point, int player, GameField field)
         {
             foreach(Point temp in field.Adjoin(point))
             {
                 if (field[temp].Terrain != Terrain.Wasteland) continue;
-                AddMoveOrder(priority, temp, field[temp].WaitRobot + 1, true);
+                if (field[temp].Player == player) continue;
+                AddMoveOrder(priority, temp, field[temp].WaitRobot + 1);
             }
         }
 
-        public void AddSecureGround(int priority, int borderRobot, Point initial, GameField field)
+        public void AddSecureGround(int invadePriority, int guardPriority, int player, GameField field)
         {
-            SearchSecureGround(priority, borderRobot, initial, field, new bool[field.Width, field.Height]);
-        }
-
-        private void SearchSecureGround(int priority, int borderRobot, Point point, GameField field, bool[,] searched)
-        {
-            searched[point.X, point.Y] = true;
-            if (field[point].Player != Player && field[point].Terrain == Terrain.Wasteland)
+            foreach (Point point in field.Iterator())
             {
-                if (field[point].WaitRobot <= borderRobot)
+                if (field[point].Terrain != Terrain.Wasteland) continue;
+                if (!field.IsBoundary(point, player)) continue;
+                if (field[point].Player == player)
                 {
-                    AddMoveOrder(priority - field[point].WaitRobot, point, field[point].WaitRobot + 1, true);
+                    AddMoveOrder(guardPriority, point, 1);
                 }
-                return;
+                else
+                {
+                    if (field[point].WaitRobot > 0) continue;
+                    AddMoveOrder(invadePriority, point, 1);
+                }
             }
-            foreach (Point temp in field.Adjoin(point))
+        }
+
+        public void AddKamikaze(int priority, int player, GameField field)
+        {
+            foreach (Point point in field.Iterator())
             {
-                if (searched[temp.X, temp.Y]) continue;
-                SearchSecureGround(priority, borderRobot, temp, field, searched);
+                if (field[point].Terrain != Terrain.Wasteland) continue;
+                if (field[point].Player == player)continue;
+                AddMoveOrder(priority - field[point].WaitRobot, point, field[point].WaitRobot + 1);
             }
         }
 
@@ -73,15 +79,18 @@ namespace Common
         public void Dispose(GameField field, ICommander commander)
         {
             Sort();
+            bool isOrderBuild = false;
             for (int i = Count - 1; i >= 0; i--)
             {
-                if (this[i].Execute(field, commander) || this[i].Once)
+                if (this[i] is OrderBuild)
                 {
-                    this[i] = null;
+                    if (isOrderBuild) continue;
+                    isOrderBuild = true;
                 }
+                this[i].Execute(field, commander);
             }
+            Clear();
             commander.Finish();
-            RemoveAll(o => o == null);
         }
     }
 }

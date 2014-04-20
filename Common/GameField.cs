@@ -161,7 +161,7 @@ namespace Common
             }
         }
 
-        public int GetNeedRobot(Terrain ter)
+        public static int GetNeedRobot(Terrain ter)
         {
             switch (ter)
             {
@@ -175,7 +175,7 @@ namespace Common
             }
         }
 
-        public int GetNeedResource(Terrain ter)
+        public static int GetNeedResource(Terrain ter)
         {
             switch (ter)
             {

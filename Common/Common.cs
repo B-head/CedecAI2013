@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -52,6 +53,22 @@ namespace Common
         public static bool operator !=(Point lhs, Point rhs)
         {
             return !lhs.Equals(rhs);
+        }
+    }
+
+    public struct TownPlan
+    {
+        public readonly int VictoryPoint;
+        public readonly int SpendRobot;
+        public readonly Point Excavator;
+        public readonly ReadOnlyCollection<Point> Town;
+
+        public TownPlan(int victoryPoint, int spendRobot, Point excavator, ReadOnlyCollection<Point> town)
+        {
+            VictoryPoint = victoryPoint;
+            SpendRobot = spendRobot;
+            Excavator = excavator;
+            Town = town;
         }
     }
 

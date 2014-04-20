@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Common
 {
-    public class Field<TYPE>
+    public class Field<T>
     {
-        protected TYPE[,] field;
+        protected T[,] field;
         public readonly int Width;
         public readonly int Height;
 
@@ -16,10 +16,10 @@ namespace Common
         {
             Width = width;
             Height = height;
-            field = new TYPE[width, height];
+            field = new T[width, height];
         }
 
-        public TYPE this[int x, int y]
+        public T this[int x, int y]
         {
             get
             {
@@ -31,7 +31,7 @@ namespace Common
             }
         }
 
-        public TYPE this[Point point]
+        public T this[Point point]
         {
             get
             {
@@ -43,114 +43,80 @@ namespace Common
             }
         }
 
-        public void CopyTo(Field<TYPE> other)
+        public void CopyTo(Field<T> other)
         {
             Array.Copy(field, other.field, Width * Height);
         }
 
         public bool IsInRange(Point point)
         {
-            return IsInRange(point.X, point.Y);
+            return point.X >= 0 && point.X < Width && point.Y >= 0 && point.Y < Height;
         }
 
-        public bool IsInRange(int x, int y)
+        public static Point TransformDirection(int dir, Point point)
         {
-            return x >= 0 && x < Width && y >= 0 && y < Height;
+            return TransformDirection((Direction)dir, point);
         }
 
-        public bool TransformDirection(int dir, int x, int y, out int tx, out int ty)
+        public static Point TransformDirection(Direction dir, Point point)
         {
-            return TransformDirection((Direction)dir, x, y, out tx, out ty);
-        }
-
-        public Point TransformDirection(int dir, Point from)
-        {
-            return TransformDirection((Direction)dir, from);
-        }
-
-        public Point TransformDirection(Direction dir, Point from)
-        {
-            Point result;
-            TransformDirection((Direction)dir, from.X, from.Y, out result.X, out result.Y);
-            return result;
-        }
-
-        public bool TransformDirection(Direction dir, int x, int y, out int tx, out int ty)
-        {
-            tx = x;
-            ty = y;
+            Point result = point;
             switch (dir)
             {
-                case Direction.Center: tx += 0; ty += 0; break;
-                case Direction.Right: tx += 1; ty += 0; break;
-                case Direction.UpperRight: tx += 1; ty += -1; break;
-                case Direction.DownerRight: tx += 0; ty += 1; break;
-                case Direction.Left: tx += -1; ty += 0; break;
-                case Direction.DownerLeft: tx += -1; ty += 1; break;
-                case Direction.UpperLeft: tx += 0; ty += -1; break;
+                case Direction.Center: result.X += 0; result.Y += 0; break;
+                case Direction.Right: result.X += 1; result.Y += 0; break;
+                case Direction.UpperRight: result.X += 1; result.Y += -1; break;
+                case Direction.DownerRight: result.X += 0; result.Y += 1; break;
+                case Direction.Left: result.X += -1; result.Y += 0; break;
+                case Direction.DownerLeft: result.X += -1; result.Y += 1; break;
+                case Direction.UpperLeft: result.X += 0; result.Y += -1; break;
                 default: throw new Exception();
             }
-            return !IsInRange(tx, ty);
-        }
-
-        public Point TransformTowerRange(int i, Point from)
-        {
-            Point result;
-            TransformTowerRange(i, from.X, from.Y, out result.X, out result.Y);
             return result;
         }
 
-        public bool TransformTowerRange(int i, int x, int y, out int tx, out int ty)
+        public static Point TransformTowerRange(int i, Point point)
         {
-            tx = x;
-            ty = y;
+            Point result = point;
             switch (i)
             {
-                case 0: tx += 1; ty += 0; break;
-                case 1: tx += 1; ty += -1; break;
-                case 2: tx += 0; ty += 1; break;
-                case 3: tx += -1; ty += 0; break;
-                case 4: tx += -1; ty += 1; break;
-                case 5: tx += 0; ty += -1; break;
-                case 6: tx += 2; ty += 0; break;
-                case 7: tx += 2; ty += -2; break;
-                case 8: tx += 0; ty += 2; break;
-                case 9: tx += -2; ty += 0; break;
-                case 10: tx += -2; ty += 2; break;
-                case 11: tx += 0; ty += -2; break;
+                case 0: result.X += 1; result.Y += 0; break;
+                case 1: result.X += 1; result.Y += -1; break;
+                case 2: result.X += 0; result.Y += 1; break;
+                case 3: result.X += -1; result.Y += 0; break;
+                case 4: result.X += -1; result.Y += 1; break;
+                case 5: result.X += 0; result.Y += -1; break;
+                case 6: result.X += 2; result.Y += 0; break;
+                case 7: result.X += 2; result.Y += -2; break;
+                case 8: result.X += 0; result.Y += 2; break;
+                case 9: result.X += -2; result.Y += 0; break;
+                case 10: result.X += -2; result.Y += 2; break;
+                case 11: result.X += 0; result.Y += -2; break;
                 default: throw new Exception();
             }
-            return !IsInRange(tx, ty);
-        }
-
-        public Point TransformSitePropose(int i, Point from)
-        {
-            Point result;
-            TransformSitePropose(i, from.X, from.Y, out result.X, out result.Y);
             return result;
         }
 
-        public bool TransformSitePropose(int i, int x, int y, out int tx, out int ty)
+        public static Point TransformSitePropose(int i, Point point)
         {
-            tx = x;
-            ty = y;
+            Point result = point;
             switch (i)
             {
-                case 0: tx += 1; ty += 0; break;
-                case 1: tx += 1; ty += 1; break;
-                case 2: tx += 0; ty += 1; break;
-                case 3: tx += -1; ty += 2; break;
-                case 4: tx += -1; ty += 1; break;
-                case 5: tx += -2; ty += 1; break;
-                case 6: tx += -1; ty += 0; break;
-                case 7: tx += -1; ty += -1; break;
-                case 8: tx += 0; ty += -1; break;
-                case 9: tx += 1; ty += -2; break;
-                case 10: tx += 1; ty += -1; break;
-                case 11: tx += 2; ty += -1; break;
+                case 0: result.X += 1; result.Y += 0; break;
+                case 1: result.X += 1; result.Y += 1; break;
+                case 2: result.X += 0; result.Y += 1; break;
+                case 3: result.X += -1; result.Y += 2; break;
+                case 4: result.X += -1; result.Y += 1; break;
+                case 5: result.X += -2; result.Y += 1; break;
+                case 6: result.X += -1; result.Y += 0; break;
+                case 7: result.X += -1; result.Y += -1; break;
+                case 8: result.X += 0; result.Y += -1; break;
+                case 9: result.X += 1; result.Y += -2; break;
+                case 10: result.X += 1; result.Y += -1; break;
+                case 11: result.X += 2; result.Y += -1; break;
                 default: throw new Exception();
             }
-            return !IsInRange(tx, ty);
+            return result;
         }
 
         public IEnumerable<Point> Adjoin(Point point, bool center = false)

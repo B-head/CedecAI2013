@@ -23,6 +23,7 @@ namespace Visualizer
     {
         GameManager manager;
         DistanceMap distance;
+        BuildPriority priority;
         MassInformation[,] mass;
         int selectX;
         int selectY;
@@ -31,8 +32,8 @@ namespace Visualizer
         {
             InitializeComponent();
             manager = new GameManager(new Random());
-            manager.AI[0] = new TestAI();
-            manager.AI[1] = new TestAI();
+            manager.AI[0] = new ColonizeAI();
+            manager.AI[1] = new ColonizeAI();
             manager.AI[2] = new ColonizeAI();
             manager.Prepare();
             int w = manager.Field.Width, h = manager.Field.Height;
@@ -71,6 +72,7 @@ namespace Visualizer
             Player2Info.Text = manager.GetPlayerInfo(1);
             Player3Info.Text = manager.GetPlayerInfo(2);
             distance = new DistanceMap(manager.Field, manager.Player, new Common.Point { X = selectX, Y = selectY });
+            priority = new BuildPriority(manager.Field, manager.Player, new Common.Point { X = selectX, Y = selectY }, 255);
             GameField field = manager.Field;
             int w = field.Width, h = field.Height;
             for (int x = 0; x < w; x++)
@@ -104,6 +106,10 @@ namespace Visualizer
             if (ShowDistanse.IsChecked == true)
             {
                 result.AppendLine("Dt:" + distance[x, y].ToString());
+            }
+            if (ShowPriority.IsChecked == true)
+            {
+                result.AppendLine("Bp:" + priority[x, y].ToString());
             }
             return result.ToString();
         }

@@ -23,7 +23,8 @@ namespace Common
             disposition = new DispositionRobot(player);
             InitialPoint = field.GetInitialPoint(player);
             planning = new TownPlanning(field);
-            int max = planning.Max(p => p.SpendRobot);
+            var forbid = planning.ForbidPoint(new Point { X = 6, Y = 6 }, field);
+            int max = forbid.Max(p => p.SpendRobot);
             var maxPlans = planning.Where(p => p.SpendRobot == max);
             foreach (Point point in field.NearIterator(InitialPoint, player))
             {
@@ -36,93 +37,41 @@ namespace Common
 
         public void Think(int turn, int maxTurn, int player, GameField field, ICommander commander)
         {
-            DistanceMap distance = new DistanceMap(field, player, InitialPoint);
-            Point fieldCenter = new Point { X = 6, Y = 6 };
-            if (field.GetPrepareResource(plan.Excavator, player, true) >= 4 && plan.Excavator != fieldCenter)
+            if (field.GetPrepareResource(plan.Excavator, player, true) >= 4 && field[plan.Excavator].Terrain == Terrain.Wasteland)
             {
-                disposition.AddBuildOrder(200, plan.Excavator, Terrain.Excavator, true);
+                disposition.AddBuildOrder(1000, plan.Excavator, Terrain.Excavator);
+                disposition.AddMoveOrder(100, plan.Excavator, GameField.GetNeedRobot(Terrain.Excavator));
             }
             foreach (Point town in plan.Town)
             {
                 if (field.GetPrepareResource(town, player, true) < 9) continue;
-                if (town == fieldCenter) continue;
-                disposition.AddBuildOrder(200, town, Terrain.Town, true);
+                disposition.AddBuildOrder(1000, town, Terrain.Town);
+                disposition.AddMoveOrder(100, town, GameField.GetNeedRobot(Terrain.Town));
             }
-            foreach (Point point in field.NearIterator(InitialPoint, player))
+            DistanceMap distance = new DistanceMap(field, player, InitialPoint);
+            BuildPriority priority = new BuildPriority(field, player, InitialPoint, 99);
+            foreach (Point point in field.Iterator())
             {
                 if (field.GetPrepareResource(point, player, true) < 4) continue;
-                if (field[point].Terrain == Terrain.Hole)
+                if (!field.IsAdjoinTerritory(point, player)) continue;
+                if (point == new Point { X = 6, Y = 6 }) continue;
+                Terrain building;
+                switch(field[point].Terrain)
                 {
-                    disposition.AddBuildOrder(100 - distance[point], point, Terrain.Bridge, true);
+                    case Terrain.Wasteland: building = Terrain.House; break;
+                    case Terrain.Hole: building = Terrain.Bridge; break;
+                    default: continue;
                 }
-                else if (field[point].Terrain == Terrain.Wasteland)
-                {
-                    disposition.AddBuildOrder(100 - distance[point], point, Terrain.House, true);
-                }
-                else
-                {
-                    continue;
-                }
-                break;
+                disposition.AddBuildOrder(priority[point] * 10, point, building);
+                disposition.AddMoveOrder(priority[point], point, GameField.GetNeedRobot(building));
             }
             foreach (OrderBuild build in disposition.EnumerateOrder<OrderBuild>())
             {
-                disposition.AddSecureResource(build.Priority - 1, build.Point, field);
+                disposition.AddSecureResource(build.Priority / 10 - 1, build.Point, player, field);
             }
-            disposition.AddSecureGround(0, 0, InitialPoint, field);
+            disposition.AddSecureGround(150, 100, player, field);
+            disposition.AddKamikaze(0, player, field);
             disposition.Dispose(field, commander);
-        }
-    }
-
-    public class KamikazeAI : IGameAI
-    {
-        public string Prepare(int player, GameField field)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Think(int turn, int maxTurn, int player, GameField field, ICommander commander)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class InvadeAI : IGameAI
-    {
-        public string Prepare(int player, GameField field)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Think(int turn, int maxTurn, int player, GameField field, ICommander commander)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class GovernAI : IGameAI
-    {
-        public string Prepare(int player, GameField field)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Think(int turn, int maxTurn, int player, GameField field, ICommander commander)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class CompanyAI : IGameAI
-    {
-        public string Prepare(int player, GameField field)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Think(int turn, int maxTurn, int player, GameField field, ICommander commander)
-        {
-            throw new NotImplementedException();
         }
     }
 

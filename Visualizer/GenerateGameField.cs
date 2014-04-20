@@ -96,11 +96,10 @@ namespace Visualizer
 
         private void SymmetryCopy()
         {
-            for (int x = 0; x < Width; x++)
+            for (int x = 0; x < Size; x++)
             {
-                for (int y = 0; y < Height; y++)
+                for (int y = Size; y < Height; y++)
                 {
-                    if (field[x, y].Terrain == Terrain.Outside) continue;
                     field[y, FuncA(x, y)] = field[x, y];
                     field[FuncA(x, y), x] = field[x, y];
                 }
@@ -118,7 +117,7 @@ namespace Visualizer
             field[y, FuncA(x, y)].Player = player[1];
             field[FuncA(x, y), x].Terrain = Terrain.Initial;
             field[FuncA(x, y), x].Player = player[2];
-            return JoiningCount(new bool[Width, Height], x, y);
+            return JoiningCount(new bool[Width, Height], new Point { X = x, Y = y });
         }
 
         private int FuncA(int x, int y)
@@ -126,17 +125,16 @@ namespace Visualizer
             return (Size - 1) * 3 - x - y;
         }
 
-        private int JoiningCount(bool[,] settled, int x, int y)
+        private int JoiningCount(bool[,] settled, Point point)
         {
-            if (!IsInRange(x, y)) return 0;
-            if (settled[x, y]) return 0;
-            if (field[x, y].Terrain == Terrain.Outside || field[x, y].Terrain == Terrain.Hole) return 0;
-            int result = 1, tx, ty;
-            settled[x, y] = true;
-            for (int i = 1; i < 7; i++)
+            if (!IsInRange(point)) return 0;
+            if (this[point].Terrain == Terrain.Outside || this[point].Terrain == Terrain.Hole) return 0;
+            if (settled[point.X, point.Y]) return 0;
+            settled[point.X, point.Y] = true;
+            int result = 1;
+            foreach(Point temp in Adjoin(point))
             {
-                TransformDirection(i, x, y, out tx, out ty);
-                result += JoiningCount(settled, tx, ty);
+                result += JoiningCount(settled, temp);
             }
             return result;
         }

@@ -6,22 +6,6 @@ using System.Text;
 
 namespace Common
 {
-    public struct TownPlan
-    {
-        public readonly int VictoryPoint;
-        public readonly int SpendRobot;
-        public readonly Point Excavator;
-        public readonly ReadOnlyCollection<Point> Town;
-
-        public TownPlan(int victoryPoint, int spendRobot, Point excavator, ReadOnlyCollection<Point> town)
-        {
-            VictoryPoint = victoryPoint;
-            SpendRobot = spendRobot;
-            Excavator = excavator;
-            Town = town;
-        }
-    }
-
     public class TownPlanning : IEnumerable<TownPlan>
     {
         List<TownPlan> plan;
@@ -44,7 +28,7 @@ namespace Common
         {
             for (int i = dir; i < 12; i++)
             {
-                Point town = field.TransformSitePropose(i, excavator);
+                Point town = GameField.TransformSitePropose(i, excavator);
                 if (!field.IsInRange(town)) continue;
                 if (!IsPlanLiberate(i, townDir)) continue;
                 if (!field.IsLiberate(town)) continue;
@@ -82,7 +66,7 @@ namespace Common
             int victory = 3, spend = 25;
             for (int i = 0; i < townDir.Length; i++)
             {
-                Point temp = field.TransformSitePropose(townDir[i], excavator);
+                Point temp = GameField.TransformSitePropose(townDir[i], excavator);
                 town[i] = temp;
                 spend += 10;
                 victory += townDir[i] % 2 == 0 ? 18 : 21;
@@ -102,6 +86,30 @@ namespace Common
                     test[point.X, point.Y] = true;
                 }
             }
+        }
+
+        public IEnumerable<TownPlan> ForbidPoint(Point point, GameField field)
+        {
+            List<TownPlan> result = new List<TownPlan>();
+            foreach (TownPlan p in plan)
+            {
+                if (p.Excavator == point) continue;
+                if (!IsForbidPointInTown(p.Town, point, field)) continue;
+                result.Add(p);
+            }
+            return result;
+        }
+
+        private bool IsForbidPointInTown(ReadOnlyCollection<Point> towns, Point point, GameField field)
+        {
+            foreach (Point town in towns)
+            {
+                foreach (Point temp in field.Adjoin(town, true))
+                {
+                    if(temp == point) return false;
+                }
+            }
+            return true;
         }
 
         public IEnumerator<TownPlan> GetEnumerator()

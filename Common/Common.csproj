@@ -39,6 +39,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AStar.cs" />
+    <Compile Include="BuildPriority.cs" />
     <Compile Include="Common.cs" />
     <Compile Include="DispositionRobot.cs" />
     <Compile Include="DistanceMap.cs" />
